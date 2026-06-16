@@ -47,8 +47,8 @@ impl Benchmark {
                 }
                 as_millis(start.elapsed())
             }),
-            warmup_time: Duration::from_millis(50),
-            sample_time: Duration::from_millis(50),
+            warmup_time: Duration::from_millis(100),
+            sample_time: Duration::from_millis(100),
             sample_iters: 100,
         }
     }
@@ -114,8 +114,10 @@ fn as_millis(duration: Duration) -> f64 {
 macro_rules! define_benchmark {
     (
         #[picobench::bench()]
+        $(#[$($attr:meta)*])*
         $(pub)? fn $name:ident() $(-> $output:ty)? $body:block
     ) => {
+        $(#[$($attr)*])*
         #[doc(hidden)]
         mod $name {
             use super::*;

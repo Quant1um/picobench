@@ -1,4 +1,4 @@
-use crate::{bencher::Benchmark, stats};
+use crate::{bench::Benchmark, stats};
 
 pub fn run() {
     let mut result = vec![];

@@ -1,6 +1,6 @@
 #![forbid(unsafe_code)]
 
-mod bencher;
+mod bench;
 mod runner;
 mod stats;
 
@@ -10,5 +10,5 @@ pub use picobench_macros::bench;
 #[doc(hidden)]
 pub use small_ctor::ctor;
 
-pub use bencher::Benchmark;
+pub use bench::Benchmark;
 pub use runner::run;
