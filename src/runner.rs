@@ -308,9 +308,7 @@ mod print {
                     ]]
                 } else {
                     vec![vec![
-                        Cell::new(print_tree_lines(depth.clone(), is_last, &name))
-                            .bold()
-                            .left(),
+                        Cell::new(print_tree_lines(depth.clone(), is_last, &name)).left(),
                     ]]
                 };
 
