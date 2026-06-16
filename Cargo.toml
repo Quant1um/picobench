@@ -1,0 +1,31 @@
+[workspace]
+members = [
+    ".",
+    "macros",
+]
+
+[package]
+name = "picobench"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+tinyjson = "2.5.1"
+fastrand = "2.4.1"
+fastant = "0.1.11"
+yansi = "1.0.1"
+
+# macros
+small_ctor = { version = "0.1.2", optional = true }
+picobench-macros = { path = "macros", optional = true }
+
+[features]
+default = ["macros"]    
+macros = ["dep:picobench-macros", "dep:small_ctor"]
+
+[profile.bench]
+debug = true
+
+[[bench]]
+name = "simple"
+harness = false
