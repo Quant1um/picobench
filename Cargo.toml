@@ -10,6 +10,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+core_affinity = "0.8.3"
 tinyjson = "2.5.1"
 fastrand = "2.4.1"
 fastant = "0.1.11"

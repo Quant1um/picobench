@@ -2,6 +2,13 @@ use crate::{bencher::Benchmark, stats};
 
 pub fn run() {
     let mut result = vec![];
+
+    if let Some(cores) = core_affinity::get_core_ids()
+        && let Some(core) = cores.first()
+    {
+        core_affinity::set_for_current(*core);
+    }
+
     for benchmark in Benchmark::list() {
         let (current, iters) = benchmark.run();
         let previous = cli::load_benchmark(&benchmark.name);
