@@ -85,25 +85,27 @@ impl Benchmark {
 
         // sampling phase, use the number of iterations per sample computed in the warmup phase
         let mut results = Vec::new();
-        let mut sampling_time = 0.0;
-        let mut sampling_iters = 0u64;
+        let mut sample_time = 0.0;
+        let mut sample_iters = 0u64;
+        let mut sample_size = 0u64;
         let iters_per_sample =
             (as_millis(SAMPLE_TIME) / (total_time / total_iters as f64)).ceil() as u64;
 
-        while sampling_time < as_millis(self.sample_time) || sampling_iters < self.sample_size {
+        while sample_time < as_millis(self.sample_time) || sample_size < self.sample_size {
             let time = (self.callback)(iters_per_sample);
 
-            match sampling_iters.checked_add(iters_per_sample) {
+            match sample_iters.checked_add(iters_per_sample) {
                 Some(iters) => {
                     results.push(time / iters_per_sample as f64);
-                    sampling_iters = iters;
-                    sampling_time += time;
+                    sample_iters = iters;
+                    sample_time += time;
+                    sample_size += 1;
                 }
                 None => break, // we overflowed, just stop
             };
         }
 
-        (results, sampling_iters)
+        (results, sample_iters)
     }
 }
 
