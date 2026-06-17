@@ -14,15 +14,15 @@ pub fn run() {
         let previous = cli::load_benchmark(&benchmark.name);
         cli::save_benchmark(&benchmark.name, &current);
 
-        let sample = stats::Sample::from_iter(current.iter().copied());
-        let (p95, p99) = stats::percentile_95_99(&current);
+        let (p50, p95, p99) = stats::percentile_50_95_99(&current);
 
         let change = if let Some(previous) = &previous {
-            let previous_mean = stats::Sample::from_iter(previous.iter().copied()).mean();
-            let percentage = (sample.mean() - previous_mean) / previous_mean * 100.0;
+            let (p50_prev, _, _) = stats::percentile_50_95_99(previous);
+            let percentage = (p50 - p50_prev) / p50_prev * 100.0;
 
-            let p_value = stats::bootstrap_htest(&current, previous, 10000, false);
-            if p_value < benchmark.confidence_level {
+            let chi2 = stats::median_test(previous, &current);
+            if chi2 > 3.841 {
+                // chi-squared critical value for 1 degree of freedom at 95% confidence level
                 BenchmarkChange::Significant(percentage)
             } else {
                 BenchmarkChange::Insignificant(percentage)
@@ -33,8 +33,7 @@ pub fn run() {
 
         result.push(BenchmarkResult {
             path: benchmark.name.split("::").map(|s| s.to_string()).collect(),
-            mean: sample.mean(),
-            err95: sample.stderr95(),
+            p50,
             p95,
             p99,
             iters,
@@ -48,10 +47,8 @@ pub fn run() {
 #[derive(Clone, Debug)]
 pub struct BenchmarkResult {
     pub path: Vec<String>,
-    /// in milliseconds
-    pub mean: f64,
-    /// confidence interval (95%) half-width
-    pub err95: f64,
+    /// median, in milliseconds
+    pub p50: f64,
     /// 95-th percentile of the sample, in milliseconds
     pub p95: f64,
     /// 99-th percentile of the sample, in milliseconds
@@ -281,10 +278,9 @@ mod print {
 
                 vec![vec![
                     Cell::new(print_tree_lines(depth, is_last, &path)).left(),
-                    Cell::new(time(result.mean)).bold(),
+                    Cell::new(time(result.p50)).bold(),
                     Cell::new(time(result.p95)),
                     Cell::new(time(result.p99)),
-                    Cell::new(format!("{:.2}%", result.err95 / result.mean * 100.0)),
                     match result.change {
                         BenchmarkChange::None => Cell::new(""),
                         BenchmarkChange::Insignificant(p) => Cell::new(format!("{:+.2}%", p)).dim(),
@@ -304,10 +300,9 @@ mod print {
                         Cell::new(print_tree_lines(depth.clone(), is_last, &name))
                             .bold()
                             .left(),
-                        Cell::new("mean").dim(),
+                        Cell::new("50th").dim(),
                         Cell::new("95th").dim(),
                         Cell::new("99th").dim(),
-                        Cell::new("err").dim(),
                         Cell::new("delta").dim(),
                         Cell::new("iters").dim(),
                     ]]

@@ -23,9 +23,6 @@ pub struct Benchmark {
 
     /// The amount of time to warm up the benchmark before collecting samples.
     pub warmup_time: Duration,
-
-    /// Confidence level (p-value) threshold for reporting regressions.
-    pub confidence_level: f64,
 }
 
 impl Benchmark {
@@ -53,7 +50,6 @@ impl Benchmark {
             warmup_time: Duration::from_millis(100),
             sample_time: Duration::from_millis(100),
             sample_size: 100,
-            confidence_level: 0.0005,
         }
     }
 
