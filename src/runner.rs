@@ -14,15 +14,15 @@ pub fn run() {
         let previous = cli::load_benchmark(&benchmark.name);
         cli::save_benchmark(&benchmark.name, &current);
 
-        let mean = stats::Sample::from_iter(current.iter().copied()).mean();
-        let (lower, upper) = stats::bootstrap_ci(&current, 10000, 0.05);
+        let sample = stats::Sample::from_iter(current.iter().copied());
+        let (p95, p99) = stats::percentile_95_99(&current);
 
         let change = if let Some(previous) = &previous {
             let previous_mean = stats::Sample::from_iter(previous.iter().copied()).mean();
-            let percentage = (mean - previous_mean) / previous_mean * 100.0;
+            let percentage = (sample.mean() - previous_mean) / previous_mean * 100.0;
 
             let p_value = stats::bootstrap_htest(&current, previous, 10000, false);
-            if p_value < 0.005 {
+            if p_value < benchmark.confidence_level {
                 BenchmarkChange::Significant(percentage)
             } else {
                 BenchmarkChange::Insignificant(percentage)
@@ -33,9 +33,10 @@ pub fn run() {
 
         result.push(BenchmarkResult {
             path: benchmark.name.split("::").map(|s| s.to_string()).collect(),
-            mean,
-            lower,
-            upper,
+            mean: sample.mean(),
+            err95: sample.stderr95(),
+            p95,
+            p99,
             iters,
             change,
         });
@@ -49,10 +50,12 @@ pub struct BenchmarkResult {
     pub path: Vec<String>,
     /// in milliseconds
     pub mean: f64,
-    /// 95% confidence interval lower bound for the mean
-    pub lower: f64,
-    /// 95% confidence interval upper bound for the mean
-    pub upper: f64,
+    /// confidence interval (95%) half-width
+    pub err95: f64,
+    /// 95-th percentile of the sample, in milliseconds
+    pub p95: f64,
+    /// 99-th percentile of the sample, in milliseconds
+    pub p99: f64,
     /// total number of iterations
     pub iters: u64,
     /// Change from previous benchmark, if any
@@ -278,9 +281,10 @@ mod print {
 
                 vec![vec![
                     Cell::new(print_tree_lines(depth, is_last, &path)).left(),
-                    Cell::new(time(result.lower)),
                     Cell::new(time(result.mean)).bold(),
-                    Cell::new(time(result.upper)),
+                    Cell::new(time(result.p95)),
+                    Cell::new(time(result.p99)),
+                    Cell::new(format!("{:.2}%", result.err95 / result.mean * 100.0)),
                     match result.change {
                         BenchmarkChange::None => Cell::new(""),
                         BenchmarkChange::Insignificant(p) => Cell::new(format!("{:+.2}%", p)).dim(),
@@ -300,10 +304,11 @@ mod print {
                         Cell::new(print_tree_lines(depth.clone(), is_last, &name))
                             .bold()
                             .left(),
-                        Cell::new("lower").dim(),
                         Cell::new("mean").dim(),
-                        Cell::new("upper").dim(),
-                        Cell::new("change").dim(),
+                        Cell::new("95th").dim(),
+                        Cell::new("99th").dim(),
+                        Cell::new("err").dim(),
+                        Cell::new("delta").dim(),
                         Cell::new("iters").dim(),
                     ]]
                 } else {

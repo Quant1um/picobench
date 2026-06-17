@@ -19,10 +19,13 @@ pub struct Benchmark {
     pub sample_time: Duration,
 
     /// The minimum number of iterations to run the benchmark for, regardless of the time taken.
-    pub sample_iters: u64,
+    pub sample_size: u64,
 
     /// The amount of time to warm up the benchmark before collecting samples.
     pub warmup_time: Duration,
+
+    /// Confidence level (p-value) threshold for reporting regressions.
+    pub confidence_level: f64,
 }
 
 impl Benchmark {
@@ -49,7 +52,8 @@ impl Benchmark {
             }),
             warmup_time: Duration::from_millis(100),
             sample_time: Duration::from_millis(100),
-            sample_iters: 100,
+            sample_size: 100,
+            confidence_level: 0.0005,
         }
     }
 
@@ -86,7 +90,7 @@ impl Benchmark {
         let iters_per_sample =
             (as_millis(SAMPLE_TIME) / (total_time / total_iters as f64)).ceil() as u64;
 
-        while sampling_time < as_millis(self.sample_time) || sampling_iters < self.sample_iters {
+        while sampling_time < as_millis(self.sample_time) || sampling_iters < self.sample_size {
             let time = (self.callback)(iters_per_sample);
 
             match sampling_iters.checked_add(iters_per_sample) {

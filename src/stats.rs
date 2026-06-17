@@ -1,18 +1,10 @@
-/// Computes the confidence interval (1.0 - alpha)% estimation for the mean of a sample using bootstrapping.
-///
-/// Returns a tuple of (lower_bound, upper_bound).
-pub fn bootstrap_ci(data: &[f64], n_resamples: usize, alpha: f64) -> (f64, f64) {
-    let mut rng = fastrand::Rng::new();
-    let mut means = Vec::with_capacity(n_resamples);
-
-    for _ in 0..n_resamples {
-        means.push(Sample::resample(&mut rng, data).sum());
-    }
-
-    means.sort_unstable_by(|a, b| a.total_cmp(b));
-    let lower = means[(alpha * 0.5 * n_resamples as f64) as usize];
-    let upper = means[((1.0 - alpha * 0.5) * n_resamples as f64) as usize];
-    (lower / data.len() as f64, upper / data.len() as f64)
+/// Computes the 95th and 99th percentiles of a sample.
+pub fn percentile_95_99(data: &[f64]) -> (f64, f64) {
+    let mut sorted = data.to_vec();
+    sorted.sort_unstable_by(|a, b| a.total_cmp(b));
+    let p95 = sorted[(0.95 * sorted.len() as f64) as usize];
+    let p99 = sorted[(0.99 * sorted.len() as f64) as usize];
+    (p95, p99)
 }
 
 /// Computes the p-value for comparing two samples using bootstrapping.
@@ -75,9 +67,9 @@ pub fn bootstrap_htest(data1: &[f64], data2: &[f64], n_resamples: usize, one_tai
 /// used for calculating statistics such as mean, standard deviation, and confidence intervals.
 #[derive(Debug, Clone, Copy)]
 pub struct Sample {
-    n: u64,
-    sum: f64,
-    sum2: f64,
+    pub n: u64,
+    pub sum: f64,
+    pub sum2: f64,
 }
 
 impl Sample {
@@ -109,11 +101,6 @@ impl Sample {
         }
     }
 
-    /// Returns the total sum of the sample (mean * n).
-    pub fn sum(&self) -> f64 {
-        self.sum
-    }
-
     /// Returns the mean of the sample.
     pub fn mean(&self) -> f64 {
         self.sum / self.n as f64
@@ -126,6 +113,21 @@ impl Sample {
         }
 
         (self.sum2 - self.sum.powi(2) / self.n as f64) / (self.n as f64 - 1.0)
+    }
+
+    /// Returns the 95% confidence interval half-size for the mean of the sample.
+    pub fn stderr95(&self) -> f64 {
+        1.96 * (self.variance() / self.n as f64).sqrt()
+    }
+}
+
+impl Default for Sample {
+    fn default() -> Self {
+        Self {
+            n: 0,
+            sum: 0.0,
+            sum2: 0.0,
+        }
     }
 }
 
@@ -151,18 +153,19 @@ impl From<&[f64]> for Sample {
     }
 }
 
+impl From<f64> for Sample {
+    fn from(value: f64) -> Self {
+        Self {
+            n: 1,
+            sum: value,
+            sum2: value * value,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn test_bootstrap_ci() {
-        let sample = vec![
-            1.0, 2.0, 2.0, 3.0, 3.0, 3.0, 4.0, 4.0, 4.0, 4.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 20.0,
-        ];
-        let (lower, upper) = bootstrap_ci(&sample, 10000, 0.05);
-        println!("Bootstrap CI: ({}, {})", lower, upper);
-    }
 
     #[test]
     fn test_bootstrap_htest() {
