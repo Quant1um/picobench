@@ -117,22 +117,23 @@ macro_rules! define_benchmark {
     (
         #[picobench::bench()]
         $(#[$($attr:meta)*])*
-        $(pub)? fn $name:ident() $(-> $output:ty)? $body:block
+        $vis:vis fn $name:ident() $(-> $output:ty)? $body:block
     ) => {
         $(#[$($attr)*])*
-        #[doc(hidden)]
-        mod $name {
-            use super::*;
-
+        #[inline(always)]
+        $vis fn $name() $(-> $output)? {
             #[$crate::ctor]
-            unsafe fn register() {
+            #[doc(hidden)]
+            unsafe fn __picobench() {
                 $crate::Benchmark::new(
-                    module_path!(),
+                    concat!(module_path!(), "::", stringify!($name)),
                     #[inline(always)]
-                    || $body,
+                    || $name(),
                 )
                 .register();
             }
+
+            $body
         }
     };
 }
