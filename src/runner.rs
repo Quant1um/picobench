@@ -252,7 +252,7 @@ mod print {
         }
     }
 
-    fn print_tree_lines(depth: Range<usize>, is_last: bool, name: &str) -> String {
+    fn tree_lines(depth: Range<usize>, is_last: bool, name: &str) -> String {
         let mut bars = String::new();
         for i in 0..depth.end {
             if i == depth.end - 1 {
@@ -276,7 +276,7 @@ mod print {
                 let path = result.path.join("::");
 
                 vec![vec![
-                    Cell::new(print_tree_lines(depth, is_last, &path)).left(),
+                    Cell::new(tree_lines(depth, is_last, &path)).left(),
                     Cell::new(time(result.p50)).bold(),
                     Cell::new(time(result.p95)),
                     Cell::new(time(result.p99)),
@@ -296,7 +296,7 @@ mod print {
             BenchmarkTree::Group(name, children) => {
                 let mut rows = if is_first {
                     vec![vec![
-                        Cell::new(print_tree_lines(depth.clone(), is_last, &name))
+                        Cell::new(tree_lines(depth.clone(), is_last, &name))
                             .bold()
                             .left(),
                         Cell::new("50th").dim(),
@@ -307,7 +307,7 @@ mod print {
                     ]]
                 } else {
                     vec![vec![
-                        Cell::new(print_tree_lines(depth.clone(), is_last, &name)).left(),
+                        Cell::new(tree_lines(depth.clone(), is_last, &name)).left(),
                     ]]
                 };
 
