@@ -20,9 +20,8 @@ pub fn run() {
             let (p50_prev, _, _) = stats::percentile_50_95_99(previous);
             let percentage = (p50 - p50_prev) / p50_prev * 100.0;
 
-            let chi2 = stats::median_test(previous, &current);
-            if chi2 > 3.841 {
-                // chi-squared critical value for 1 degree of freedom at 95% confidence level
+            let chi2 = stats::median_test(previous, &current); /* p < 0.01 */
+            if chi2 > 6.635 {
                 BenchmarkChange::Significant(percentage)
             } else {
                 BenchmarkChange::Insignificant(percentage)
