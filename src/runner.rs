@@ -11,8 +11,8 @@ pub fn run() {
 
     for benchmark in Benchmark::list() {
         let (current, iters) = benchmark.run();
-        let previous = cli::load_benchmark(&benchmark.name);
-        cli::save_benchmark(&benchmark.name, &current);
+        let previous = cli::load_benchmark(&benchmark.path);
+        cli::save_benchmark(&benchmark.path, &current);
 
         let (p50, p95, p99) = stats::percentile_50_95_99(&current);
 
@@ -31,7 +31,7 @@ pub fn run() {
         };
 
         result.push(BenchmarkResult {
-            path: benchmark.name.split("::").map(|s| s.to_string()).collect(),
+            path: benchmark.path.split("::").map(|s| s.to_string()).collect(),
             p50,
             p95,
             p99,

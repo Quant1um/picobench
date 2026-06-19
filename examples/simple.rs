@@ -72,7 +72,7 @@ mod wait {
 }
 
 mod mul {
-    use std::hint::black_box;
+    use std::{hint::black_box, time::Duration};
 
     #[picobench::bench]
     fn mul_1000() {
@@ -84,7 +84,7 @@ mod mul {
         }
     }
 
-    #[picobench::bench]
+    #[picobench::bench(sample_time = Duration::from_millis(1000), sample_size = 10)]
     fn mul_1() {
         let i = black_box(0.0f64);
         let j = black_box(1.0f64);

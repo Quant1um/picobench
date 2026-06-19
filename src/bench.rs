@@ -9,8 +9,8 @@ static BENCHMARKS: Mutex<Vec<Benchmark>> = Mutex::new(Vec::new());
 /// A benchmark that can be run
 #[derive(Clone)]
 pub struct Benchmark {
-    /// The name of the benchmark
-    pub name: String,
+    /// The path of the benchmark (e.g. "my_module::my_benchmark"), used for display purposes and to group benchmarks together.
+    pub path: Arc<str>,
 
     /// The callback to run the benchmark, which takes the number of iterations to run and returns the time taken in seconds
     pub callback: Arc<dyn Fn(u64) -> f64 + Send + Sync>,
@@ -37,9 +37,9 @@ impl Benchmark {
     }
 
     /// Creates a new benchmark with the given name and callback.
-    pub fn new(name: impl Into<String>, callback: impl Fn() + Send + Sync + 'static) -> Self {
+    pub fn new(path: impl Into<String>, callback: impl Fn() + Send + Sync + 'static) -> Self {
         Self {
-            name: name.into(),
+            path: path.into().into(),
             callback: Arc::new(move |iters| {
                 let start = fastant::Instant::now();
                 for _ in 0..iters {
@@ -51,6 +51,37 @@ impl Benchmark {
             sample_time: Duration::from_millis(100),
             sample_size: 100,
         }
+    }
+
+    /// Sets the warmup time for the benchmark.
+    ///
+    /// This is the amount of time to run the benchmark before collecting samples.
+    ///
+    /// Warmup is also used to determine the number of iterations to run per sample, so that the benchmark runs for a reasonable amount of time.
+    pub fn warmup_time(mut self, warmup_time: Duration) -> Self {
+        self.warmup_time = warmup_time;
+        self
+    }
+
+    /// Sets the sample time for the benchmark.
+    ///
+    /// This is the minimum amount of time to collect samples for.
+    pub fn sample_time(mut self, sample_time: Duration) -> Self {
+        self.sample_time = sample_time;
+        self
+    }
+
+    /// Sets the sample size for the benchmark.
+    ///
+    /// This is the minimum number of iterations to run the benchmark for, regardless of the time taken.
+    pub fn sample_size(mut self, sample_size: u64) -> Self {
+        self.sample_size = sample_size;
+        self
+    }
+
+    pub fn path(mut self, path: impl Into<String>) -> Self {
+        self.path = path.into().into();
+        self
     }
 
     /// Run the benchmark with the given number of iterations and stopping criteria.
@@ -115,7 +146,7 @@ fn as_millis(duration: Duration) -> f64 {
 #[cfg(feature = "macros")]
 macro_rules! define_benchmark {
     (
-        #[picobench::bench()]
+        #[picobench::bench($($property:ident = $value:expr),* $(,)?)]
         $(#[$($attr:meta)*])*
         $vis:vis fn $name:ident() $(-> $output:ty)? $body:block
     ) => {
@@ -130,6 +161,9 @@ macro_rules! define_benchmark {
                     #[inline(always)]
                     || $name(),
                 )
+                $(
+                    .$property($value)
+                )*
                 .register();
             }
 
