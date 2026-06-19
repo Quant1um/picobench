@@ -14,10 +14,10 @@ pub fn run() {
         let previous = cli::load_benchmark(&benchmark.path);
         cli::save_benchmark(&benchmark.path, &current);
 
-        let (p50, p95, p99) = stats::percentile_50_95_99(&current);
+        let (p50, p95, p99) = stats::percentile_50_95_99(current.iter().copied());
 
         let change = if let Some(previous) = &previous {
-            let (p50_prev, _, _) = stats::percentile_50_95_99(previous);
+            let (p50_prev, _, _) = stats::percentile_50_95_99(previous.iter().copied());
             let percentage = (p50 - p50_prev) / p50_prev * 100.0;
 
             let chi2 = stats::median_test(previous, &current); /* p < 0.01 */
